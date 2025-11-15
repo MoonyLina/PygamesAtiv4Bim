@@ -13,6 +13,23 @@ font = pg.font.Font(None, 50)
 background = pg.image.load(r"C:\Users\anaca\Desktop\IFSP\Linguagem Técnica\Ativ4BimPygames\images\fundo.jpeg")
 background_sfc = pg.transform.scale(background, (w, h))
 
+denis_move = pg.image.load(r"C:\Users\anaca\Desktop\IFSP\Linguagem Técnica\PygamesAtiv4Bim\images\D1.png")
+denis_stand = pg.image.load(r"C:\Users\anaca\Desktop\IFSP\Linguagem Técnica\PygamesAtiv4Bim\images\Dparado.png")
+largura_D, altura_D = denis_stand.get_size()
+nova_larguraD = largura_D // 1.5
+nova_alturaD = altura_D // 1.5
+denis_rect = denis_stand.get_rect(topleft = (900, 610))
+denis_move_sfc = pg.transform.scale(denis_move, (nova_larguraD, nova_alturaD))
+denis_stand_sfc = pg.transform.scale(denis_stand, (nova_larguraD, nova_alturaD))
+
+regua = pg.image.load(r"C:\Users\anaca\Desktop\IFSP\Linguagem Técnica\PygamesAtiv4Bim\images\regua.png")
+regua_largura, regua_altura = regua.get_size()
+nova_larguraR = regua_largura // 1.3
+nova_alturaR = regua_altura // 1.3
+regua_sfc = pg.transform.scale(regua, (nova_larguraR, nova_alturaR))
+regua_sfc = pg.transform.rotate (regua_sfc, 90)
+regua_rect = regua_sfc.get_rect(topleft = (denis_rect.left, denis_rect.centery - 25))
+
 player_walking = pg.image.load(r"C:\Users\anaca\Desktop\IFSP\Linguagem Técnica\Ativ4BimPygames\images\jandando.png")
 player_stand = pg.image.load(r"C:\Users\anaca\Desktop\IFSP\Linguagem Técnica\Ativ4BimPygames\images\jparada.png")
 
@@ -38,18 +55,29 @@ text_sfc = font.render("Text", False, "Black")
 player_walk_right = [player_walking_right_sfc, player_stand_right_sfc]
 player_walk_left = [player_walking_left_sfc, player_stand_left_sfc]
 
+denis_attack = False
+denis_anim = 0
+anim_duration = 50
+
 
 frame = 0
 vel_anim = 0.10
 direction = "R"
 
 vel = 5
+regua_vel = -7
+
 
 
 vidas = 3
-gravidade = 1
-pulo = -20
 
+grav = 1
+pulo = -23
+vel_y = 0
+no_chao = True
+chao_y = 600
+
+initial_time = pg.time.get_ticks()
 
 
 while True:
@@ -59,6 +87,21 @@ while True:
             exit()
     
     key = pg.key.get_pressed()
+
+    act_time = pg.time.get_ticks()
+    sec_time = (act_time - initial_time) // 1000
+
+    if key[pg.K_SPACE] and no_chao:
+        vel_y = pulo
+        no_chao = False
+    
+    vel_y += grav
+    playerS_rect.y += vel_y
+
+    if playerS_rect.y >= chao_y:
+        playerS_rect.y = chao_y
+        vel_y = 0
+        no_chao = True
 
     if key[pg.K_RIGHT]:
         direction = "R"
@@ -81,11 +124,44 @@ while True:
         else:
             current_player_sfc = player_stand_left_sfc
     
+    if denis_attack:
+        current_denis_sfc = denis_move_sfc 
+        denis_anim -= 1
+        if denis_anim <= 0:
+            denis_attack = False
+    else: 
+        current_denis_sfc = denis_stand_sfc
     
+    regua_rect.x += regua_vel
+    
+    if regua_rect.right < 0:
+        regua_rect.midleft = (denis_rect.left, denis_rect.centery -25)
+        denis_attack = True
+        denis_anim = anim_duration
+
+    if playerS_rect.colliderect(regua_rect):
+        vidas -= 1
+        regua_rect.midleft = (denis_rect.left, denis_rect.centery - 25)
+        print(f"Vidas: {vidas}")
+    if vidas <= 0:
+        print("Game Over")
+        pg.quit()
+        exit()
     
     screen.blit(background_sfc, (0,0))
     screen.blit(text_sfc, (600, 100))
+    screen.blit(regua_sfc, regua_rect)
+    screen.blit(current_denis_sfc, denis_rect)
     screen.blit(current_player_sfc, playerS_rect)
+    
+    
+
+    vidas_text = font.render(f"Vidas: {vidas}", False, "Black")
+    screen.blit(vidas_text, (50, 50))
+
+    time_text = font.render(f"Tempo: {sec_time}s", False, "Black")
+    screen.blit(time_text, (900, 50))
+
     
     pg.display.update()
     clock.tick(60)
